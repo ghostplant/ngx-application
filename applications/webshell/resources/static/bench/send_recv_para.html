@@ -1,0 +1,39 @@
+
+<script>
+  var bstr = new Uint8Array([72, 69, 76, 76, 79]).buffer;
+  
+  function click_btn2() {
+    var ws = new WebSocket('ws' + window.location.protocol.substring(4) + '//' + window.location.host + '/application', 'binary');
+    ws.onopen = function(evt) {
+       // alert('connected!');
+       ws.send(bstr);
+    };
+    ws.onmessage = function(evt) {
+      ws.send(evt.data);
+      document.getElementById('cnt').innerHTML = '' + (parseInt(document.getElementById('cnt').innerHTML) + 1);
+    };
+    ws.onclose = function() {
+    };
+    return ws;
+  }
+  
+  function click_btn() {
+  	var a = click_btn2();
+  	var b = click_btn2();
+  	var c = click_btn2();
+  	var d = click_btn2();
+  	var e = click_btn2();
+  	var f = click_btn2();
+  	var g = click_btn2();
+  	var h = click_btn2();
+  	
+    setTimeout(function() { a.close();b.close();c.close();d.close();
+    e.close();f.close();g.close();h.close(); }, 60000);
+  }
+</script>
+<body>
+  <button onclick='click_btn()'>Test</button>
+  <button onclick='click_btn(true)'>Close</button>
+  <div id="cnt">0</div>
+</body>
+

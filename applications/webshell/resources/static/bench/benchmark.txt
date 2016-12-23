@@ -1,0 +1,8 @@
+ngx dync =>  open + N * (send + recv) + close: 138672 * 2 / 60 sec (http)     vs 133673 (https)
+ngx dync =>  N * (open + send + recv + close): 26384 (http)      vs 21598 * (https)
+
+ngx dync paraX4 =>  open + N * (send + recv) + close: 310835 (http)      vs 301049 * (https)
+
+ngx buil =>  open + N * (send + recv) + close: 142388 * 2 / 60 sec (http)     vs 126987 (https)
+ngx buil =>  N * (open + send + recv + close): 27430 (http)      vs 20999 * (https)
+
