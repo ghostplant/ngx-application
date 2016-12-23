@@ -1,0 +1,3 @@
+.build/*
+applications/*/resources/bin/*
+applications/*/resources/ssl/*

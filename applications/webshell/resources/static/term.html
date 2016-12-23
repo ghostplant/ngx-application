@@ -1,0 +1,171 @@
+<!doctype html>
+<title>term.js</title>
+<!--
+  term.js
+  Copyright (c) 2012-2013, Christopher Jeffrey (MIT License)
+-->
+<style>
+  html {
+    background: white;
+  }
+
+  .terminal {
+    float: left;
+    border: #000 solid 5px;
+    font-family: "DejaVu Sans Mono", "Liberation Mono", monospace;
+    font-size: 16px;
+    color: #f0f0f0;
+    background: #000;
+  }
+
+  .terminal-cursor {
+    color: #000;
+    background: #f0f0f0;
+  }
+
+</style>
+<script src="term.js"></script>
+<body style="margin: 0 auto; text-align: center;">
+  <div style="margin-top: 10px; display: inline-block">
+    <input id="resize_w" readOnly="readOnly" style="width: 30px; text-align: right;" /> x
+    <input id="resize_h" readOnly="readOnly" style="width: 30px; text-align: right;" />
+    <span style="margin-left: 30px"/>
+    <button onclick="window.open('/download')">File Download</button>
+    <span style="margin-left: 10px"/>
+    <button id="file_upload" onclick="window.upload()">File Upload</button>
+    <span style="margin-left: 10px"/>
+    <button onclick="window.termPaste()">Paste External</button>
+    <div id="term_div" style="margin-top: 15px"></div>
+  </div>
+  
+  <div style="display: none">
+    <div id="file_uploader"></div>
+    <audio id="beep_sound"><source src="beep.ogg"/></audio>
+  </div>
+  <textarea id="clipdata" style="width:50%; z-index:9999; resize: none; height:50%; background: white; padding: 5px 5px 5px 5px; opacity:1.0; border:8px solid #28004D; position:absolute; left:25%; top:25%; display: none"></textarea>
+  
+  <script>
+  ;(function() {
+    window.termPaste = function() {
+      document.getElementById('term_div').onclick = function() {
+        document.getElementById('clipdata').style.display = 'none';
+        if (window.term != null)
+          window.term.write(document.getElementById('clipdata').value);
+        document.getElementById('clipdata').value = '';
+      };
+      
+      if (document.getElementById('clipdata').style.display == 'none') {
+        setTimeout("document.getElementById('clipdata').style.display = ''", 200);
+        setTimeout("document.getElementById('clipdata').focus()", 500);
+      } else
+        document.getElementById('term_div').onclick();
+    };
+    
+    window.upload = function() {
+      document.getElementById('file_uploader').innerHTML = '<input type="file" id="file_uploader_obj" />';
+      var uploader = document.getElementById('file_uploader_obj');
+      uploader.onchange = function() {
+        var fpath = prompt('Input the remote-side folder you want to upload this file to:', '~/');
+        if (fpath == null || fpath.length == 0)
+          return;
+        if (fpath[fpath.length - 1] != '/')
+          fpath += '/';
+        if (fpath[0] == '~')
+          fpath = '/root' + fpath.substring(1);
+        if (fpath[0] != '/')
+          fpath = '/root/' + fpath;
+        document.getElementById('file_upload').disabled = true;
+        var file = uploader.files[0];
+        fpath += file.name;
+        var ws_uploader = new WebSocket('ws' + window.location.protocol.substring(4) + '//' + window.location.host + '/upload/', 'binary');
+        var fsize = file.size, counts = Math.floor((fsize + 32767) / 32768), current = 0, l = 0, r = 0;
+        ws_uploader.onopen = function (evt) {
+          ws_uploader.send('o' + fpath);
+        };
+        ws_uploader.onclose = function (evt) {
+          alert('The file has been successfully uploaded to remote:\n\n~/' + file.name);
+          console.log('Uploading procedure finished.');
+          document.getElementById('file_upload').innerHTML = 'Continue Upload';
+          document.getElementById('file_upload').disabled = false;
+        };
+        ws_uploader.onmessage = function (evt) {
+          var progress = parseInt(Math.ceil(current * 100 / counts));
+          document.getElementById('file_upload').innerHTML = progress + ' %';
+          current = current + 1;
+          l = r;
+          r = Math.min(l + 32768, fsize);
+          if (l < r)
+            ws_uploader.send(file.slice(l, r));
+          else
+            ws_uploader.close();
+        };
+      };
+      uploader.click();
+    };
+    
+    window.onload = function() {
+      var term = new Terminal({
+        cols: 80,
+        rows: 24,
+        useStyle: true,
+        screenKeys: true,
+        cursorBlink: false
+      });
+      
+      window.term = term;
+
+      term.on('data', function(data) {
+        if (window.ws != null)
+          window.ws.send('d' + data);
+      });
+
+      term.on('title', function(title) {
+        document.title = title;
+      });
+      
+      var resizer = function() {
+        var x = Math.floor(window.innerWidth * 0.1) - 2;
+        var y = Math.max(1, Math.floor(window.innerHeight * 0.05) - 4);
+        term.resize(x, y);
+        document.getElementById('resize_w').value = term.cols;
+        document.getElementById('resize_h').value = term.rows;
+        window.ws.send('s' + term.rows + ',' + term.cols);
+      };
+      
+      window.addEventListener('resize', resizer);
+      
+      window.ws = new WebSocket('ws' + window.location.protocol.substring(4) + '//' + window.location.host + '/shell/', 'binary');
+      
+      window.ws.onopen = function() { resizer(); };
+      window.ws.onclose = function() {
+        window.ws = null;
+        term.write('\r\n\x1b[33m[Terminal Session Closed..]\x1b[m\r\n');
+        // term.destroy();
+      };
+      
+      window.ws.onmessage = function(evt) {
+        var fileReader = new FileReader();
+        fileReader.onload = function() {
+          var data = String.fromCharCode.apply(null, new Uint8Array(this.result));
+          if (data.length > 1 && data.charCodeAt(1) == 7) {
+            var audio = document.getElementById('beep_sound');
+            if (audio.play != undefined)
+              audio.play();
+          }
+          term.write(data.substring(1));
+          if (data[0] == 'y') {
+            window.ws.send('s' + term.rows + ',' + term.cols);
+            //this.connected = true;
+            //window.shellinabox.sendRequest();
+            return;
+          }
+        };
+        fileReader.readAsArrayBuffer(evt.data);
+      };
+
+      term.open(document.getElementById('term_div'));
+    };
+  }).call(this);
+  </script>
+</body>
+

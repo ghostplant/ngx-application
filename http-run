@@ -1,0 +1,46 @@
+#!/bin/sh -e
+
+! echo "$1" | grep -E "^[A-Za-z_][A-Za-z0-9_]*$" >/dev/null && echo "Context name should be non-empty and only contain letters, '_' and non-leading zeros" && exit 1
+
+cd $(dirname $0)/applications/$1/resources
+
+[ ! -e ./bin/ngx_http_$1_module_$(uname -m).so ] && echo "Context '$1' doesn't exist or isn't compiled!" && exit 1
+
+TMP_CONF=$(pwd)/www.cfg
+
+LISTEN=${LISTEN:-80}
+awk '{ gsub("%RESDIR%", "'$(pwd)'", $0); gsub("%LISTEN%", "'"${LISTEN}"'", $0); gsub("%MARCH%", "'$(uname -m)'", $0); print $0 }' ../www.cfg.in > ${TMP_CONF}
+
+LISTEN=$(awk '{ if ($1 == "listen") { print $2 } }' ${TMP_CONF} | head -n 1)
+USE_SSL=$(awk '{ if ($1 == "listen" && ($3 == "ssl" || $3 ~ "^ssl;.*$") ) { print "ssl" } }' ${TMP_CONF} | head -n 1)
+
+if [ "$USE_SSL" != "" ] && grep "\%SSL_CONF\%" ${TMP_CONF} >/dev/null; then
+	if [ ! -e ./ssl/ca.pem ]; then
+		mkdir -p ./ssl
+		openssl req -x509 -nodes -days 3650 -subj "/CN=$(hostname)/" -newkey rsa:4096 -keyout ./ssl/ca.pem -out ./ssl/ca.pem
+	fi
+	if [ "$ACCOUNT" != "" ]; then
+		# ACCOUNT=${ACCOUNT:-admin:badmin}
+		USER=$(echo "${ACCOUNT}" | awk -F\: '{ print $1 }')
+		PASS=$(echo "${ACCOUNT}" | awk -F\: '{ for(i=2; i<NF; ++i) { printf $i ":" } printf $NF }')
+		echo "Generating new account .."
+		echo "${USER}":$(openssl passwd -crypt "${PASS}") > ./ssl/auth.basic
+	fi
+	if [ -e ./ssl/auth.basic ]; then
+		SSL_AUTH_FLAG=" auth_basic realm; auth_basic_user_file .\/ssl\/auth.basic;";
+	fi
+	sed -i "s/%SSL_CONF%/ssl_certificate .\/ssl\/ca.pem; ssl_certificate_key .\/ssl\/ca.pem;${SSL_AUTH_FLAG}/g" ${TMP_CONF}
+else
+	sed -i "s/%SSL_CONF%//g" ${TMP_CONF}
+fi
+
+UNIX_SOCK=$(echo "${LISTEN}" | awk '{ if ($0 ~ "^unix:") { print substr($0, 6, length($0) - 1) }; }')
+if [ "${UNIX_SOCK}" != "" ]; then
+	mkdir -p "$(dirname ${UNIX_SOCK})"
+	rm -f ${UNIX_SOCK}
+fi
+
+echo "Nignx started running in foreground listening on ${LISTEN} [${USE_SSL}] .."
+# exec gdb -ex "set follow-fork-mode child" -ex "set breakpoint pending on" -ex "break ngx_http_application_handler" -ex "r" --args $(which nginx) -c ${TMP_CONF}
+exec nginx -c ${TMP_CONF}
+

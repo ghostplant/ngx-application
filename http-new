@@ -1,0 +1,19 @@
+#!/bin/sh -e
+
+cd $(dirname $0)
+WORKDIR=$(pwd)
+
+! echo "$1" | grep -E "^[A-Za-z_][A-Za-z0-9_]*$" >/dev/null && echo "Context name should be non-empty and only contain letters, '_' and non-leading zeros" && exit 1
+
+[ -e ./applications/$1/config ] && [ "$2" != "-f" ] && echo "Context '$1' already exists!" && exit 1
+
+mkdir -p ./applications/$1/resources/static ./applications/$1/resources/ssl
+
+for SRC in ./mod-base/*.c ./mod-base/*.h; do
+	BASE_NAME=$(basename $SRC)
+	DEST_NAME=$(echo "$BASE_NAME" | sed "s/http_application/http_$1/g")
+	sed "s/http_application/http_$1/g" ${SRC} > ./applications/$1/$DEST_NAME
+done
+
+sed "s/http_application/http_$1/g" ./mod-base/www.cfg.in > ./applications/$1/www.cfg.in
+sed "s/http_application/http_$1/g" ./mod-base/config.in > ./applications/$1/config

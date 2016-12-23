@@ -1,0 +1,42 @@
+
+<script>
+  function click_btn(isClose) {
+    if (isClose) {
+      try { window.ws.close(); } catch (e) {}
+      window.ws = null;
+      return;
+    }
+    var bstr = new Uint8Array([72, 69, 76, 76, 79]).buffer;
+    if (window.ws)
+       return window.ws.send(bstr);
+    window.ws = new WebSocket('ws' + window.location.protocol.substring(4) + '//' + window.location.host + '/application', 'binary');
+    var ws = window.ws;
+    ws.onopen = function(evt) {
+       alert('connected!');
+       return;
+       setTimeout(function() { ws.close(); }, 60000);
+       ws.send(bstr);
+    };
+    ws.onmessage = function(evt) {
+      var fileReader = new FileReader();
+      fileReader.onload = function() {
+        var data = String.fromCharCode.apply(null, new Uint8Array(this.result));
+        //alert('recv: ' + data);
+        document.getElementById('cnt').innerHTML = '' + (parseInt(document.getElementById('cnt').innerHTML) + 1);
+        ws.send(bstr);
+        /* setTimeout(function() { ws.send(bstr); }, 2000); */
+      };
+      fileReader.readAsArrayBuffer(evt.data);
+    };
+    ws.onclose = function() {
+      alert('closed!');
+      window.ws = null;
+    };
+  }
+</script>
+<body>
+  <button onclick='click_btn()'>Test</button>
+  <button onclick='click_btn(true)'>Close</button>
+  <div id="cnt">0</div>
+</body>
+
