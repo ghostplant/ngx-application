@@ -1,3 +1,4 @@
 .build/*
 applications/*/resources/bin/*
 applications/*/resources/ssl/*
+applications/*/resources/static/www.cfg
