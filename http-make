@@ -13,7 +13,7 @@ if ! cd nginx-*; then
 	# curl -L http://nginx.org/download/nginx-1.10.0.tar.gz > nginx-src.tar.gz
 	# tar xzvf nginx-src.tar.gz
 	apt-get source nginx
-	apt-get build-dep nginx
+	apt-get build-dep nginx || true
 	cd nginx-*
 fi
 
