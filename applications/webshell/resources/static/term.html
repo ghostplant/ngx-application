@@ -3,29 +3,19 @@
 <!--
   term.js
   Copyright (c) 2012-2013, Christopher Jeffrey (MIT License)
+  
+  Upgraded by CUI Wei <ghostplant@qq.com>, 2017
 -->
-<style>
+<style type="text/css">
   html {
-    background: white;
+    overflow: hidden;
+    background: black;
   }
-
-  .terminal {
-    float: left;
-    border: #000 solid 0px;
-    font-size: 16px;
-    color: #f0f0f0;
-    background: #000000;
-  }
-
-  .terminal-cursor {
-    color: #000;
-    background: #f0f0f0;
-  }
-
 </style>
+
 <script src="term.js"></script>
-<body style="margin: 0 0; text-align: center;">
-  <div style="display: inline-block; display: none">
+<body style="margin: 0 0; text-align: left;">
+  <div style="display: none">
     <input id="resize_w" readOnly="readOnly" style="width: 30px; text-align: right;" /> x
     <input id="resize_h" readOnly="readOnly" style="width: 30px; text-align: right;" />
     <span style="margin-left: 30px"/>
@@ -108,7 +98,7 @@
         rows: 24,
         useStyle: true,
         screenKeys: true,
-        cursorBlink: false
+        cursorBlink: true
       });
       
       window.term = term;
@@ -145,13 +135,58 @@
       window.ws.onmessage = function(evt) {
         var fileReader = new FileReader();
         fileReader.onload = function() {
-          var data = String.fromCharCode.apply(null, new Uint8Array(this.result));
-          if (data.length > 1 && data.charCodeAt(1) == 7) {
+          var uarr = new Uint8Array(this.result);
+          if (uarr.length > 1 && uarr[1] == 7) {
             var audio = document.getElementById('beep_sound');
             if (audio.play != undefined)
               audio.play();
           }
+
+          var utfResult = [];
+          for (var i = 0, ch, utfCount = 0; i < uarr.length; ++i) {
+            ch = uarr[i];
+            if (ch > 0x7F) {
+              if (utfCount > 0 && (ch & 0xC0) == 0x80) {
+                utfChar = (utfChar << 6) | (ch & 0x3F);
+                if (--utfCount <= 0) {
+                  if (utfChar > 0xFFFF || utfChar < 0) {
+                    ch = 0xFFFD;
+                  } else {
+                    ch = utfChar;
+                  }
+                } else {
+                  continue;
+                }
+              } else {
+                if ((ch & 0xE0) == 0xC0) {
+                  utfCount = 1;
+                  utfChar  = ch & 0x1F;
+                } else if ((ch & 0xF0) == 0xE0) {
+                  utfCount = 2;
+                  utfChar  = ch & 0x0F;
+                } else if ((ch & 0xF8) == 0xF0) {
+                  utfCount = 3;
+                  utfChar  = ch & 0x07;
+                } else if ((ch & 0xFC) == 0xF8) {
+                  utfCount = 4;
+                  utfChar  = ch & 0x03;
+                } else if ((ch & 0xFE) == 0xFC) {
+                  utfCount = 5;
+                  utfChar  = ch & 0x01;
+                } else {
+                  utfCount = 0;
+                }
+                continue;
+              }
+            } else {
+              utfCount = 0;
+            }
+            utfResult.push(ch);
+          }
+          
+          var data = String.fromCharCode.apply(null, utfResult);
           term.write(data.substring(1));
+          
           if (data[0] == 'y') {
             window.ws.send('s' + term.rows + ',' + term.cols);
             //this.connected = true;
