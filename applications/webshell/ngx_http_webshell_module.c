@@ -73,6 +73,29 @@ void signal_hander() {
 	ngx_notify(ngx_signal_handler);
 }
 
+const char *get_home() {
+	static char home[256] = "/home/";
+	if (!home[6]) {
+		FILE *fp = popen("whoami", "r");
+		if (!fp || !fread(home + 6, 1, sizeof(home) - 6, fp)) {
+			if (fp)
+				pclose(fp);
+			return NULL;
+		}
+		home[sizeof(home) - 1] = 0;
+		for (size_t i = 0; i < sizeof(home); ++i)
+			if (home[i] == '\n') {
+				home[i] = 0;
+				break;
+			}
+		pclose(fp);
+		fflush(stdout);
+		if (!strcmp(home + 6, "root"))
+			home[1] = 'r', home[2] = 'o', home[3] = 'o', home[4] = 't', home[5] = 0;
+	}
+	return home;
+}
+
 void ngx_websocket_on_open(ngx_http_request_t *r) {
 	shell_ctx_t *ctx = ngx_pcalloc(r->pool, sizeof(shell_ctx_t));
 	if (ctx == NULL) {
@@ -105,8 +128,11 @@ void ngx_websocket_on_open(ngx_http_request_t *r) {
 		ngx_websocket_do_close(r);
 		return;
 	}
+	const char *home = get_home();
 	if (!ctx->pid) {
-		char *sh[] = {"/bin/sh", "-c", "if [ $(whoami) = \"root\" ]; then export HOME=/root; else export HOME=/home/$(whoami); fi; cd ~; export TERM=xterm; . /etc/default/locale 2>/dev/null; if which bash >/dev/null; then SHELL=$(which bash) exec bash; else SHELL=$(which sh) exec sh; fi", NULL};
+		setenv("HOME", home, 0);
+		setenv("TERM", "xterm", 0);
+		char *sh[] = {"/bin/sh", "-c", "cd ~; . /etc/default/locale 2>/dev/null; if which bash >/dev/null; then SHELL=$(which bash) exec bash; else SHELL=$(which sh) exec sh; fi", NULL};
 		execvp(*sh, sh);
 		exit(1);
 	}
@@ -183,12 +209,26 @@ ngx_int_t ngx_websocket_on_message(ngx_http_request_t *r, u_char *message, size_
 			ioctl(ctx->conn.fd, TIOCSWINSZ, layout);
 		}
 	} else if (*message == 'o') {
-		if (ctx->upload != NULL || message[1] != '/')
+		if (ctx->upload != NULL)
 			return NGX_ERROR;
-		ctx->upload = fopen((char*)(message + 1), "wb");
+		if (message[1] == '~' && message[2] == '/') {
+			const char *home = get_home();
+			size_t l = strlen(home);
+			char *buf = (char*)malloc(l + len);
+			if (!buf)
+				return NGX_ERROR;
+			memcpy(buf, home, l);
+			memcpy(buf + l, message + 2, len - 2);
+			buf[l + len - 2] = 0;
+			ctx->upload = fopen(buf, "wb");
+			free(buf);
+		} else if (message[1] != '/')
+			return NGX_ERROR;
+		else
+			ctx->upload = fopen((char*)(message + 1), "wb");
 		if (!ctx->upload)
 			ngx_websocket_do_close(r);
-		if (ngx_websocket_do_send(r, message, 1) != NGX_OK)
+		else if (ngx_websocket_do_send(r, message, 1) != NGX_OK)
 			return NGX_ERROR;
 	} else
 			return NGX_ERROR;
