@@ -106,7 +106,7 @@ void ngx_websocket_on_open(ngx_http_request_t *r) {
 		return;
 	}
 	if (!ctx->pid) {
-		char *sh[] = {"/bin/sh", "-c", "TERM=xterm exec login -f root", NULL};
+		char *sh[] = {"/bin/sh", "-c", "if [ $(whoami) = \"root\" ]; then export HOME=/root; else export HOME=/home/$(whoami); fi; cd ~; export TERM=xterm; . /etc/default/locale 2>/dev/null; if which bash >/dev/null; then SHELL=$(which bash) exec bash; else SHELL=$(which sh) exec sh; fi", NULL};
 		execvp(*sh, sh);
 		exit(1);
 	}

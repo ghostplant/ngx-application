@@ -3,6 +3,8 @@
  * Copyright (c) 2012-2013, Christopher Jeffrey (MIT License)
  * https://github.com/chjj/term.js
  *
+  Upgraded by CUI Wei <ghostplant@qq.com>, 2017
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
@@ -739,7 +741,6 @@ Terminal.prototype.open = function(parent) {
     // need to be taken on the document.
     this.initGlobal();
   }
-
   if (!('useFocus' in this.options) || this.options.useFocus) {
     // Ensure there is a Terminal.focus.
     this.focus();
@@ -1243,7 +1244,6 @@ Terminal.prototype.refresh = function(start, end) {
     out = '';
 
     if (y === this.y
-        && this.cursorState
         && (this.ydisp === this.ybase || this.selectMode)
         && !this.cursorHidden) {
       x = this.x;
@@ -1266,7 +1266,10 @@ Terminal.prototype.refresh = function(start, end) {
         }
         if (data !== this.defAttr) {
           if (data === -1) {
-            out += '<span id="globCursor" class="reverse-video terminal-cursor">';
+            if (this.cursorState)
+              out += '<span id="globCursor" style="color: #000; background: #ffffff;">';
+            else
+              out += '<span id="globCursor" style="color: #888; background: #000; border: solid 1px; margin: -1px">';
           } else {
             out += '<span style="';
 
@@ -5832,6 +5835,7 @@ function indexOf(obj, el) {
 }
 
 function isWide(ch) {
+  if (ch >= '\u0080') return true;
   if (ch <= '\uff00') return false;
   return (ch >= '\uff01' && ch <= '\uffbe')
       || (ch >= '\uffc2' && ch <= '\uffc7')
