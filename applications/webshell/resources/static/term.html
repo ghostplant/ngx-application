@@ -15,15 +15,11 @@
 
 <script src="term.js"></script>
 <body style="margin: 0 0; text-align: left;">
-  <div style="display: none">
-    <input id="resize_w" readOnly="readOnly" style="width: 30px; text-align: right;" /> x
-    <input id="resize_h" readOnly="readOnly" style="width: 30px; text-align: right;" />
-    <span style="margin-left: 30px"/>
-    <button onclick="window.open('/download')">File Download</button>
-    <span style="margin-left: 10px"/>
-    <button id="file_upload" onclick="window.upload()">File Upload</button>
-    <span style="margin-left: 10px"/>
-    <button onclick="window.termPaste()">Paste External</button>
+  <div style="position: absolute; z-index: 2; right: 0%; margin-top: 10px; margin-right: 10px; opacity:0.4;">
+    <button style="margin-top: 5px; width: 140px" id="term_size">0x0</button><br/>
+    <button style="margin-top: 5px; width: 140px;" onclick="window.open('/download')">File Download</button><br/>
+    <button style="margin-top: 5px; width: 140px;" onclick="window.upload()" id="file_upload">File Upload</button><br/>
+    <button style="margin-top: 5px; width: 140px;" onclick="window.termPaste()">Extern Paste</button><br/>
   </div>
   <div id="term_div"></div>
   
@@ -59,22 +55,21 @@
           return;
         if (fpath[fpath.length - 1] != '/')
           fpath += '/';
-        if (fpath[0] == '~')
-          fpath = '/root' + fpath.substring(1);
-        if (fpath[0] != '/')
-          fpath = '/root/' + fpath;
+        if (fpath[0] != '/' && fpath[0] != '~')
+          fpath = '~/' + fpath;
         document.getElementById('file_upload').disabled = true;
         var file = uploader.files[0];
         fpath += file.name;
         var ws_uploader = new WebSocket('ws' + window.location.protocol.substring(4) + '//' + window.location.host + '/upload/', 'binary');
         var fsize = file.size, counts = Math.floor((fsize + 32767) / 32768), current = 0, l = 0, r = 0;
         ws_uploader.onopen = function (evt) {
+          document.getElementById('file_upload').nameContent = document.getElementById('file_upload').innerHTML;
           ws_uploader.send('o' + fpath);
         };
         ws_uploader.onclose = function (evt) {
           alert('The file has been successfully uploaded to remote:\n\n~/' + file.name);
           console.log('Uploading procedure finished.');
-          document.getElementById('file_upload').innerHTML = 'Continue Upload';
+          document.getElementById('file_upload').innerHTML = document.getElementById('file_upload').nameContent;
           document.getElementById('file_upload').disabled = false;
         };
         ws_uploader.onmessage = function (evt) {
@@ -116,8 +111,7 @@
         var x = Math.max(1, Math.floor(window.innerWidth / document.getElementById('globCursor').offsetWidth));
         var y = Math.max(1, Math.floor(window.innerHeight / document.getElementById('globCursor').offsetHeight))
         term.resize(x, y);
-        document.getElementById('resize_w').value = term.cols;
-        document.getElementById('resize_h').value = term.rows;
+        document.getElementById('term_size').innerHTML = x + 'x' + y;
         window.ws.send('s' + term.rows + ',' + term.cols);
       };
       
