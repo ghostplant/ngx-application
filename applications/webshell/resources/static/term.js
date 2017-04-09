@@ -1375,13 +1375,15 @@ Terminal.prototype._cursorBlink = function() {
   if (cursor == null) {
     this.refresh(this.y, this.y);
     cursor = document.getElementById('globCursor');
+    if (cursor == null)
+      return;
   }
   if (this.cursorState) {
     cursor.style.color = '#000';
     cursor.style.background = '#ffffff';
   } else {
-    cursor.style.color = '#888';
-    cursor.style.background = '#000';
+    cursor.style.color = '#444';
+    cursor.style.background = '#aaaaaa';
   }
 };
 
