@@ -1266,10 +1266,7 @@ Terminal.prototype.refresh = function(start, end) {
         }
         if (data !== this.defAttr) {
           if (data === -1) {
-            if (this.cursorState)
-              out += '<span id="globCursor" style="color: #000; background: #ffffff;">';
-            else
-              out += '<span id="globCursor" style="color: #888; background: #000; border: solid 1px; margin: -1px">';
+            out += '<span id="globCursor">';
           } else {
             out += '<span style="';
 
@@ -1375,20 +1372,17 @@ Terminal.prototype._cursorBlink = function() {
   if (Terminal.focus !== this) return;
   this.cursorState ^= 1;
   var cursor = document.getElementById('globCursor');
-  if (cursor != null) {
-    if (this.cursorState) {
-      cursor.style.color = '#000';
-      cursor.style.background = '#ffffff';
-      cursor.style.border = '';
-      cursor.style.margin = '';
-    } else {
-      cursor.style.color = '#888';
-      cursor.style.background = '#000';
-      cursor.style.border = 'solid 1px';
-      cursor.style.margin = '-1px';
-    }
-  } else
+  if (cursor == null) {
     this.refresh(this.y, this.y);
+    cursor = document.getElementById('globCursor');
+  }
+  if (this.cursorState) {
+    cursor.style.color = '#000';
+    cursor.style.background = '#ffffff';
+  } else {
+    cursor.style.color = '#888';
+    cursor.style.background = '#000';
+  }
 };
 
 Terminal.prototype.showCursor = function() {

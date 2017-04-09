@@ -26,7 +26,7 @@
   
   <div style="display: none">
     <div id="file_uploader"></div>
-    <audio id="beep_sound"><source src="beep.ogg"/></audio>
+    <audio id="beep_sound"><source src="beep.ogg" type="audio/ogg"/></audio>
   </div>
   
   <script>
@@ -146,6 +146,7 @@
         var x = Math.max(1, Math.floor(window.innerWidth / document.getElementById('globCursor').offsetWidth));
         var y = Math.max(1, Math.floor(window.innerHeight / document.getElementById('globCursor').offsetHeight))
         term.resize(x, y);
+        console.log(window.innerWidth, document.getElementById('globCursor').offsetWidth, window.innerHeight, document.getElementById('globCursor').offsetHeight);
         document.getElementById('term_size').innerHTML = x + 'x' + y;
         window.ws.send('s' + term.rows + ',' + term.cols);
       };
