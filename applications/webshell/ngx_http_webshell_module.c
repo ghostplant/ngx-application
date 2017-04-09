@@ -130,6 +130,7 @@ void ngx_websocket_on_open(ngx_http_request_t *r) {
 	}
 	const char *home = get_home();
 	if (!ctx->pid) {
+		setenv("PATH", "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin", 0);
 		setenv("HOME", home, 0);
 		setenv("TERM", "xterm", 0);
 		char *sh[] = {"/bin/sh", "-c", "cd ~; . /etc/default/locale 2>/dev/null; export LANG; if which bash >/dev/null; then SHELL=$(which bash) exec bash; else SHELL=$(which sh) exec sh; fi", NULL};
@@ -237,7 +238,7 @@ ngx_int_t ngx_websocket_on_message(ngx_http_request_t *r, u_char *message, size_
 			ngx_websocket_do_close(r);
 		else if (ngx_websocket_do_send(r, message, 1) != NGX_OK)
 			return NGX_ERROR;
-	} else
+	} else if (*message != 'p')
 			return NGX_ERROR;
 	return NGX_OK;
 }
