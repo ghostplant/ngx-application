@@ -146,7 +146,6 @@
         var x = Math.max(1, Math.floor(window.innerWidth / document.getElementById('globCursor').offsetWidth));
         var y = Math.max(1, Math.floor(window.innerHeight / document.getElementById('globCursor').offsetHeight))
         term.resize(x, y);
-        console.log(window.innerWidth, document.getElementById('globCursor').offsetWidth, window.innerHeight, document.getElementById('globCursor').offsetHeight);
         document.getElementById('term_size').innerHTML = x + 'x' + y;
         window.ws.send('s' + term.rows + ',' + term.cols);
       };
@@ -155,9 +154,18 @@
       
       window.ws = new WebSocket('ws' + window.location.protocol.substring(4) + '//' + window.location.host + '/shell/', 'binary');
       
-      window.ws.onopen = function() { resizer(); };
+      window.ws.onopen = function() {
+        resizer();
+        if (window.pingIntv != null)
+          clearInterval(window.pingIntv);
+        window.pingIntv = setInterval(function() { if (window.ws != null) window.ws.send('p'); }, 30000);
+      };
       window.ws.onclose = function() {
         window.ws = null;
+        if (window.pingIntv != null) {
+          clearInterval(window.pingIntv);
+          window.pingIntv = null;
+        }
         term.write('\r\n\x1b[33m[Terminal Session Closed..]\x1b[m\r\n');
         // term.destroy();
       };
