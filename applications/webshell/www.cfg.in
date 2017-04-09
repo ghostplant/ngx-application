@@ -20,7 +20,7 @@ http {
 	access_log off;
 
 	server {
-		listen 8000 default_server;
+		listen %LISTEN% default_server;
 		%SSL_CONF%
 		# add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
 
