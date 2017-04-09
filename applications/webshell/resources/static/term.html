@@ -21,21 +21,57 @@
     <button style="margin-top: 5px; width: 140px;" onclick="window.upload()" id="file_upload">File Upload</button><br/>
     <button style="margin-top: 5px; width: 140px;" onclick="window.termPaste()">Extern Paste</button><br/>
   </div>
+  <textarea id="clipdata" style="width:50%; z-index:3; resize: none; height:50%; background: white; padding: 5px 5px 5px 5px; opacity:1.0; border:8px solid #28004D; position:absolute; left:25%; top:25%; display: none"></textarea>
   <div id="term_div"></div>
   
   <div style="display: none">
     <div id="file_uploader"></div>
     <audio id="beep_sound"><source src="beep.ogg"/></audio>
-    <textarea id="clipdata" style="width:50%; z-index:9999; resize: none; height:50%; background: white; padding: 5px 5px 5px 5px; opacity:1.0; border:8px solid #28004D; position:absolute; left:25%; top:25%;"></textarea>
   </div>
   
   <script>
   ;(function() {
+
+    function sendData(ch) {
+      if (window.ws != null) {
+        var mode = '0123456789ABCDEF';
+        var s = '';
+        for (var i = 0; i < ch.length; i++) {
+          var c = ch.charCodeAt(i);
+          if (c < 128) {
+            s += mode.charAt(c >> 4) + mode.charAt(c & 0xF);
+          } else if (c < 0x800) {
+            s += mode.charAt(0xC + (c >> 10)) +
+                 mode.charAt((c >> 6) & 0xF) +
+                 mode.charAt(0x8 + ((c >> 4) & 0x3)) +
+                 mode.charAt(c & 0xF);
+          } else if (c < 0x10000) {
+            s += 'E' +
+                 mode.charAt((c >> 12)) +
+                 mode.charAt(0x8 + ((c >> 10) & 0x3)) +
+                 mode.charAt((c >> 6) & 0xF ) +
+                 mode.charAt(0x8 + ((c >> 4) & 0x3)) +
+                 mode.charAt(c & 0xF);
+          } else if (c < 0x110000) {
+            s += 'F' +
+                 mode.charAt((c >> 18)) +
+                 mode.charAt(0x8 + ((c >> 16) & 0x3)) +
+                 mode.charAt((c >> 12) & 0xF ) +
+                 mode.charAt(0x8 + ((c >> 10) & 0x3)) +
+                 mode.charAt((c >> 6) & 0xF ) +
+                 mode.charAt(0x8 + ((c >> 4) & 0x3)) +
+                 mode.charAt(c & 0xF);
+          }
+        }
+        window.ws.send('d' + s);
+      }
+    }
+    
     window.termPaste = function() {
       document.getElementById('term_div').onclick = function() {
         document.getElementById('clipdata').style.display = 'none';
-        if (window.term != null)
-          window.term.write(document.getElementById('clipdata').value);
+        if (window.term != null && window.ws != null)
+          sendData(document.getElementById('clipdata').value);
         document.getElementById('clipdata').value = '';
       };
       
@@ -67,7 +103,7 @@
           ws_uploader.send('o' + fpath);
         };
         ws_uploader.onclose = function (evt) {
-          alert('The file has been successfully uploaded to remote:\n\n~/' + file.name);
+          alert('The file has been successfully uploaded to remote:\n\n' + fpath);
           console.log('Uploading procedure finished.');
           document.getElementById('file_upload').innerHTML = document.getElementById('file_upload').nameContent;
           document.getElementById('file_upload').disabled = false;
@@ -99,8 +135,7 @@
       window.term = term;
 
       term.on('data', function(data) {
-        if (window.ws != null)
-          window.ws.send('d' + data);
+        sendData(data);
       });
 
       term.on('title', function(title) {

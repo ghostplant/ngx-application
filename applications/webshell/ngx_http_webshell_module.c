@@ -132,7 +132,7 @@ void ngx_websocket_on_open(ngx_http_request_t *r) {
 	if (!ctx->pid) {
 		setenv("HOME", home, 0);
 		setenv("TERM", "xterm", 0);
-		char *sh[] = {"/bin/sh", "-c", "cd ~; . /etc/default/locale 2>/dev/null; if which bash >/dev/null; then SHELL=$(which bash) exec bash; else SHELL=$(which sh) exec sh; fi", NULL};
+		char *sh[] = {"/bin/sh", "-c", "cd ~; . /etc/default/locale 2>/dev/null; export LANG; if which bash >/dev/null; then SHELL=$(which bash) exec bash; else SHELL=$(which sh) exec sh; fi", NULL};
 		execvp(*sh, sh);
 		exit(1);
 	}
@@ -184,7 +184,14 @@ ngx_int_t ngx_websocket_on_message(ngx_http_request_t *r, u_char *message, size_
 	} else if (*message == 'd') {
 		if (ctx->conn.fd == 0)
 			return NGX_ERROR;
-		ssize_t n = write(ctx->conn.fd, message + 1, len - 1);
+		size_t ulen = (len - 1) / 2;
+		u_char *umsg = message + 1;
+		for (size_t i = 0; i < ulen; ++i) {
+			char a = (umsg[i + i] <= '9') ? (umsg[i + i] - '0') : (umsg[i + i] - 'A' + 10);
+			char b = (umsg[i + i + 1] <= '9') ? (umsg[i + i + 1] - '0') : (umsg[i + i + 1] - 'A' + 10);
+			umsg[i] = (a << 4) | b;
+		}
+		ssize_t n = write(ctx->conn.fd, umsg, ulen);
 		if (len > 1 && n <= 0)
 			return NGX_ERROR;
 		if (!ctx->in.available) {
