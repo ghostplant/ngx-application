@@ -133,11 +133,11 @@ void ngx_websocket_on_open(ngx_http_request_t *r) {
 		setenv("PATH", "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin", 0);
 		setenv("HOME", home, 0);
 		setenv("TERM", "xterm", 0);
-		char *sh[] = {"/bin/sh", "-c", "cd ~; . /etc/default/locale 2>/dev/null; export LANG; if which bash >/dev/null; then SHELL=$(which bash) exec bash; else SHELL=$(which sh) exec sh; fi", NULL};
+		char *sh[] = {"/bin/sh", "-c", "cd ~; [ -e /etc/default/locale ] && . /etc/default/locale && export LANG; if which bash >/dev/null; then SHELL=$(which bash) exec bash; else SHELL=$(which sh) exec sh; fi", NULL};
 		execvp(*sh, sh);
 		exit(1);
 	}
-	if (ctx->conn.fd < 0) {
+	if (ctx->conn.fd <= 0) {
 		ngx_websocket_do_close(r);
 		return;
 	}
@@ -203,14 +203,16 @@ ngx_int_t ngx_websocket_on_message(ngx_http_request_t *r, u_char *message, size_
 	} else if (*message == 's') {
 		if (ctx->conn.fd == 0)
 			return NGX_ERROR;
-		char *p = strchr((char*)message, ',');
-		if (!p)
-			return NGX_ERROR;
-		*p = 0;
 		if (!ctx->in.available) {
 			ctx->in.available = 1;
 			ngx_pty_recv(&ctx->in);
 		}
+		if (len == 1)
+			return NGX_OK;
+		char *p = strchr((char*)message, ',');
+		if (!p)
+			return NGX_ERROR;
+		*p = 0;
 		u_short layout[4] = {atoi((char*)message + 1), atoi(p + 1), 0, 0};
 		if (layout[0] != ctx->height || layout[1] != ctx->width) {
 			ctx->height = layout[0], ctx->width = layout[1];
