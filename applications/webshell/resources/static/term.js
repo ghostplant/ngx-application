@@ -1374,7 +1374,21 @@ Terminal.prototype.refresh = function(start, end) {
 Terminal.prototype._cursorBlink = function() {
   if (Terminal.focus !== this) return;
   this.cursorState ^= 1;
-  this.refresh(this.y, this.y);
+  var cursor = document.getElementById('globCursor');
+  if (cursor != null) {
+    if (this.cursorState) {
+      cursor.style.color = '#000';
+      cursor.style.background = '#ffffff';
+      cursor.style.border = '';
+      cursor.style.margin = '';
+    } else {
+      cursor.style.color = '#888';
+      cursor.style.background = '#000';
+      cursor.style.border = 'solid 1px';
+      cursor.style.margin = '-1px';
+    }
+  } else
+    this.refresh(this.y, this.y);
 };
 
 Terminal.prototype.showCursor = function() {
