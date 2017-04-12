@@ -1,0 +1,12 @@
+FROM alpine:3.4
+MAINTAINER CUI Wei <ghostplant@qq.com>
+
+ARG APPNAME
+
+RUN apk --update add nginx openssl curl && rm -rf /var/cache/apk
+ADD applications/${APPNAME}/resources /opt/applications/${APPNAME}/resources
+ADD applications/${APPNAME}/www.cfg.in /opt/applications/${APPNAME}/www.cfg.in
+ADD http-run /opt/http-run
+ADD LICENSE /opt/LICENSE
+
+CMD ["sh", "-cex", "/opt/http-run $(ls /opt/applications)"]
