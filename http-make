@@ -3,7 +3,7 @@
 cd $(dirname $0)
 WORKDIR=$(pwd)
 
-if ! which lsb_release >/dev/null || [ "$(lsb_release -cs)" != "xenial" ]; then
+if ! cat /etc/lsb-release 2>/dev/null | grep xenial$ >/dev/null; then
 	echo "Ubuntu 16.04 LTS is needed for this build environment" && exit 1
 fi
 
@@ -16,6 +16,7 @@ cd .build
 if ! cd nginx-*; then
 	# curl -L http://nginx.org/download/nginx-1.10.0.tar.gz > nginx-src.tar.gz
 	# tar xzvf nginx-src.tar.gz
+	apt-get install dpkg-dev
 	apt-get source nginx
 	apt-get build-dep nginx || true
 	cd nginx-*
