@@ -147,7 +147,7 @@ static void ngx_http_read_handler(ngx_http_request_t *r) {
 					break;
 				case WEBSOCKET_OPCODE_CLOSE:
 				default:
-					fprintf(stdout, "Unsupported OP code: %d\n", opcode);
+					// fprintf(stdout, "Unsupported OP code: %d\n", opcode);
 					goto err;
 			}
 			if (ctx->insz)
