@@ -33,7 +33,7 @@ ngx_int_t ngx_websocket_on_message(ngx_http_request_t *r, u_char *message, size_
 void ngx_http_application_body_handler(ngx_http_request_t *r) {
 	if (r->request_body == NULL)
 		return;
-	printf("POST-FILE: %d %lx %lx %lx\n", (int)r->count, (long)r->request_body->temp_file, (long)r->request_body->bufs, (long)r->request_body->buf), fflush(stdout);
+	// printf("POST-FILE: %d %lx %lx %lx\n", (int)r->count, (long)r->request_body->temp_file, (long)r->request_body->bufs, (long)r->request_body->buf), fflush(stdout);
 	// printf("TEMP-FILE: %s\n", (char*)r->request_body->temp_file->file.name.data), fflush(stdout);
 	// ngx_chain_t *bufs = r->request_body->bufs;
 	// while (bufs && bufs->buf != NULL) {
@@ -43,7 +43,7 @@ void ngx_http_application_body_handler(ngx_http_request_t *r) {
 }
 
 ngx_uint_t ngx_http_application_normal_handler(ngx_http_request_t *r) {
-	printf("["), ngx_print(&r->method_name), printf("] "), ngx_print(&r->unparsed_uri), printf("\n");
+	// printf("["), ngx_print(&r->method_name), printf("] "), ngx_print(&r->unparsed_uri), printf("\n");
 	if (r->method == NGX_HTTP_POST) {
 		++r->count;
 		return ngx_http_read_client_request_body(r, ngx_http_application_body_handler);

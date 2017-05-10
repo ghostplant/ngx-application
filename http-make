@@ -40,7 +40,7 @@ echo "============================================="
 
 if [ "$DOCKER" = "y" ]; then
 	cd ${WORKDIR}
-	PACKAGE=$(git config --get remote.origin.url 2>/dev/null | awk -F \/ '{print $(NF-1) "/"}')$1
+	PACKAGE=$(git config --get remote.origin.url 2>/dev/null | awk -F '[\/\:]' '{print $(NF-1) "/"}')$1
 	docker build -t ${PACKAGE} -f Dockerfile.in --build-arg APPNAME=$1 .
 	echo -e "Done. You can execute the appplication via:\n\n\tdocker run -it --rm -p 8080:80 ${PACKAGE}\n"
 fi
