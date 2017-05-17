@@ -33,6 +33,9 @@ http {
 
 		location /websockify {
 			websockify_pass 0.0.0.0:5901;
+			websockify_read_timeout 36000s;
+			websockify_connect_timeout 36000s;
+			websockify_send_timeout 36000s;
 		}
 
 		location /static {
