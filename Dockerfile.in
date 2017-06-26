@@ -3,7 +3,7 @@ MAINTAINER CUI Wei <ghostplant@qq.com>
 
 ARG APPNAME
 
-RUN apk --update add nginx openssl curl screen openssh-client && rm -rf /var/cache/apk
+RUN apk --update add nginx openssl curl tmux openssh-client && rm -rf /var/cache/apk
 ADD applications/${APPNAME}/resources /opt/applications/${APPNAME}/resources
 ADD applications/${APPNAME}/www.cfg.in /opt/applications/${APPNAME}/www.cfg.in
 ADD http-run /opt/http-run
