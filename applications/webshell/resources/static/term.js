@@ -5845,8 +5845,7 @@ function indexOf(obj, el) {
 }
 
 function isWide(ch) {
-  if (ch >= '\u0080') return true;
-  if (ch <= '\uff00') return false;
+  return (ch >= '\u25B0');
   return (ch >= '\uff01' && ch <= '\uffbe')
       || (ch >= '\uffc2' && ch <= '\uffc7')
       || (ch >= '\uffca' && ch <= '\uffcf')
