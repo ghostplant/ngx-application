@@ -722,7 +722,8 @@ Terminal.prototype.open = function(parent) {
   this.element.setAttribute('spellcheck', 'false');
   this.element.style.backgroundColor = this.colors[256];
   this.element.style.color = this.colors[257];
-  this.element.style.fontFamily = '"DejaVu Sans Mono", Consolas, monospace, "Everson Mono", FreeMono, "Andale Mono"';
+  this.element.style.fontFamily = '"Courier New","DejaVu Sans Mono","Everson Mono",FreeMono,"Andale Mono",Consolas,monospace';
+  
 
   // Create the lines for our terminal.
   this.children = [];
@@ -5845,7 +5846,8 @@ function indexOf(obj, el) {
 }
 
 function isWide(ch) {
-  return (ch >= '\u25B0');
+  if (ch >= '\u0080') return true;
+  if (ch <= '\uff00') return false;
   return (ch >= '\uff01' && ch <= '\uffbe')
       || (ch >= '\uffc2' && ch <= '\uffc7')
       || (ch >= '\uffca' && ch <= '\uffcf')
